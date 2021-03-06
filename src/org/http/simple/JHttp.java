@@ -1,4 +1,4 @@
-package com.httprequest.simple;
+package org.http.simple;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -55,10 +55,10 @@ public class JHttp {
             }
         } catch (MalformedURLException ex) {
             this.setErrorCode(-1);
-            this.setErrorMessage("Malformed URL Exception!");
+            this.setErrorMessage(ex);
         } catch (IOException ex) {
             this.setErrorCode(-2);
-            this.setErrorMessage("IO Exception!");
+            this.setErrorMessage(ex);
         }
     }
 
@@ -68,7 +68,7 @@ public class JHttp {
                 this.getHttpURLConnection().setRequestMethod(method);
             } catch (ProtocolException ex) {
                 this.setErrorCode(-3);
-                this.setErrorMessage("Protocol Exception!");
+                this.setErrorMessage(ex);
             }
         }
         return this;
@@ -122,11 +122,11 @@ public class JHttp {
         if (this.getErrorCode() == 0) {
             try {
                 this.getHttpURLConnection().connect();
-                this.setErrorCode(1);
+                this.setErrorCode(this.getHttpURLConnection().getResponseCode());
                 this.setErrorMessage("Request connected!");
             } catch (IOException ex) {
                 setErrorCode(-4);
-                setErrorMessage("IO Exception!");
+                setErrorMessage(ex);
             }
         }
         return this;
@@ -165,13 +165,13 @@ public class JHttp {
                 this.setErrorMessage("Request connected!");
             } catch (IOException ex) {
                 this.setErrorCode(-5);
-                this.setErrorMessage("IO Exception!");
+                this.setErrorMessage(ex);
             }
         }
         return this;
     }
 
-    public String header(String key) { //get
+    public String header(String key) {
         if (this.getErrorCode() == 0) {
             this.execute();
         }
@@ -181,7 +181,7 @@ public class JHttp {
                 return mHeaders.get(key.toLowerCase());
             }
         }
-        return null;
+        return this.getErrorMessage();
     }
 
     public Map<String, String> headers() {
@@ -215,7 +215,7 @@ public class JHttp {
         if (this.getErrorCode() > 0) {
             return this.body(JHttp.CHARSET_DEFAULT);
         }
-        return null;
+        return this.getErrorMessage();
     }
 
     public String body(String charset) {
@@ -235,12 +235,11 @@ public class JHttp {
                 }
                 return sbBody.toString().replaceFirst("\\n$", "");
             } catch (UnsupportedEncodingException ex) {
-                setErrorCode(-8);
-                setErrorMessage("Unsupported Encoding Exception!");
-            } catch (IOException e) {
-                System.out.println(e.toString());
-                setErrorCode(-9);
-                setErrorMessage("IO Exception!");
+                setErrorCode(-6);
+                setErrorMessage(ex);
+            } catch (IOException ex) {
+                setErrorCode(-7);
+                setErrorMessage(ex);
             } finally {
                 try {
                     bufferedReader.close();
@@ -249,7 +248,7 @@ public class JHttp {
                 }
             }
         }
-        return null;
+        return this.getErrorMessage();
     }
 
     public int code() {
@@ -258,11 +257,10 @@ public class JHttp {
         }
         if (this.getErrorCode() > 0) {
             try {
-                int code = this.getHttpURLConnection().getResponseCode();
-                setErrorCode(code);
+                setErrorCode(this.getHttpURLConnection().getResponseCode());
             } catch (IOException ex) {
-                this.setErrorCode(-6);
-                this.setErrorMessage("IO Exception!");
+                this.setErrorCode(-8);
+                this.setErrorMessage(ex);
             }
 
         }
@@ -278,8 +276,8 @@ public class JHttp {
                 String message = this.getHttpURLConnection().getResponseMessage();
                 setErrorMessage(message);
             } catch (IOException ex) {
-                this.setErrorCode(-7);
-                this.setErrorMessage("IO Exception!");
+                this.setErrorCode(-9);
+                this.setErrorMessage(ex);
             }
 
         }
@@ -300,6 +298,12 @@ public class JHttp {
 
     private void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    private void setErrorMessage(Exception ex) {
+        String strEx = ex.toString();
+        String text = strEx.substring(strEx.indexOf(":") + 1);
+        this.errorMessage = text.trim();
     }
 
     public int getErrorCode() {

@@ -68,6 +68,13 @@ int msg = rq.getErrorMessage();
 - `getErrorMessage(): String` lý do gây ra lỗi để debug
 
 ## Lịch sử cập nhật
+
+#### v1.0.1 
+- trả về String exept thay vì tự đặt như trước
+- return String nếu lỗi sẽ trả về errorMessage
+- return int nếu lỗi sẽ trả về errorCode
+- còn lại sẽ trả về null
+
 #### v1.0.0
 - Ra mắt phiên bản đầu tiên
 
