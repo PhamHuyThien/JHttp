@@ -1,7 +1,7 @@
 # `JHttp` - code request very simple.
 Một thư viện tiện lợi đơn giản để sử dụng `HttpURLConnection`.  
-Tham khảo (HttpRequest-kevinsawicki)[https://github.com/kevinsawicki/http-request], nhưng thư viện này đã lỗi thời.  
-`JHttp` sẽ giải quyết những gì mà (HttpRequest-kevinsawicki)[https://github.com/kevinsawicki/http-request] còn thiếu sót.  
+Tham khảo [HttpRequest-kevinsawicki](https://github.com/kevinsawicki/http-request), nhưng thư viện này đã lỗi thời.  
+`JHttp` sẽ giải quyết những gì mà [HttpRequest-kevinsawicki](https://github.com/kevinsawicki/http-request) còn thiếu sót.  
 
 ## Cách cài đặt
 - truy cập `releases`, tìm và tải phiên bản mới nhất.
@@ -73,4 +73,4 @@ int msg = rq.getErrorMessage();
 
 ## Về tác giả
 - Tên: Phạm Huy Thiên (SystemError)
-- Cảm ơn: (HttpRequest-kevinsawicki)[https://github.com/kevinsawicki/http-request]
+- Cảm ơn: [HttpRequest-kevinsawicki](https://github.com/kevinsawicki/http-request)
