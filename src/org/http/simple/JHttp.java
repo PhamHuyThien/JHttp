@@ -18,6 +18,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class JHttp {
 
+    //========================================================================//
     public static JHttp post(String url, boolean encode, Object... pairs) {
         return JHttp.get(url, encode, pairs).method(JHttp.METHOD_POST);
     }
@@ -44,14 +45,14 @@ public class JHttp {
         return new JHttp(url + "?" + param);
     }
 
+    //========================================================================//
     public JHttp(String url) {
         try {
-            url = url.replaceAll(" ", "");
-            URLConnection urlConnection = new URL(url).openConnection();
-            if (url.contains("https://")) {
-                this.setHttpURLConnection((HttpURLConnection) urlConnection);
-            } else {
-                this.setHttpURLConnection((HttpsURLConnection) urlConnection);
+            this.setUrl(new URL(url));
+            URLConnection urlConnection = this.getUrl().openConnection();
+            this.setHttpURLConnection((HttpURLConnection) urlConnection);
+            if (this.getUrl().getProtocol().equals("https")) {
+                this.setHttpURLConnection((HttpsURLConnection) getHttpURLConnection());
             }
         } catch (MalformedURLException ex) {
             this.setErrorCode(-1);
@@ -63,7 +64,7 @@ public class JHttp {
     }
 
     public JHttp method(String method) {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             try {
                 this.getHttpURLConnection().setRequestMethod(method);
             } catch (ProtocolException ex) {
@@ -75,7 +76,7 @@ public class JHttp {
     }
 
     public JHttp header(String key, String value) {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             key = key.trim().toLowerCase();
             value = value.trim();
             this.getHttpURLConnection().setRequestProperty(key, value);
@@ -84,7 +85,7 @@ public class JHttp {
     }
 
     public JHttp headers(String headers) {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             String[] strHeaders = headers.split("\\n");
             for (String strHeader : strHeaders) {
                 String[] pairs = strHeader.split(":");
@@ -97,7 +98,7 @@ public class JHttp {
     }
 
     public JHttp cookie(String cookie) {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             cookie = cookie.trim();
             this.getHttpURLConnection().setRequestProperty("cookie", cookie);
         }
@@ -105,21 +106,21 @@ public class JHttp {
     }
 
     public JHttp userAgent() {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.userAgent(JHttp.USERAGENT_DEFAULT);
         }
         return this;
     }
 
     public JHttp userAgent(String userAgent) {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.getHttpURLConnection().setRequestProperty("user-agent", userAgent);
         }
         return this;
     }
 
     public JHttp execute() {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             try {
                 this.getHttpURLConnection().connect();
                 this.setErrorCode(this.getHttpURLConnection().getResponseCode());
@@ -133,7 +134,7 @@ public class JHttp {
     }
 
     public JHttp send(boolean encode, Object... pairs) {
-        if (this.getErrorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
+        if (this.errorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
             StringBuilder sbParams = new StringBuilder();
             for (int i = 0; i < pairs.length; i += 2) {
                 String key = pairs[i].toString().trim();
@@ -148,14 +149,14 @@ public class JHttp {
     }
 
     public JHttp send(String param) {
-        if (this.getErrorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
+        if (this.errorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
             this.send(param, CHARSET_DEFAULT);
         }
         return this;
     }
 
     public JHttp send(String param, String charset) {
-        if (this.getErrorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
+        if (this.errorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
             this.header("content-length", param.getBytes().length + "");
             this.getHttpURLConnection().setDoOutput(true);
             try {
@@ -172,23 +173,23 @@ public class JHttp {
     }
 
     public String header(String key) {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.execute();
         }
-        if (this.getErrorCode() > 0) {
+        if (this.errorCode() > 0) {
             Map<String, String> mHeaders = this.headers();
             if (mHeaders.containsKey(key.toLowerCase())) {
                 return mHeaders.get(key.toLowerCase());
             }
         }
-        return this.getErrorMessage();
+        return this.errorMessage();
     }
 
     public Map<String, String> headers() {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.execute();
         }
-        if (this.getErrorCode() > 0) {
+        if (this.errorCode() > 0) {
             Map<String, List<String>> mHeaders = this.getHttpURLConnection().getHeaderFields();
             HashMap<String, String> hmResuls = new HashMap<>();
             mHeaders.entrySet().forEach((entry) -> {
@@ -209,20 +210,20 @@ public class JHttp {
     }
 
     public String body() {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.execute();
         }
-        if (this.getErrorCode() > 0) {
+        if (this.errorCode() > 0) {
             return this.body(JHttp.CHARSET_DEFAULT);
         }
-        return this.getErrorMessage();
+        return this.errorMessage();
     }
 
     public String body(String charset) {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.execute();
         }
-        if (this.getErrorCode() > 0) {
+        if (this.errorCode() > 0) {
             BufferedReader bufferedReader = null;
             InputStreamReader inputStreamReader = null;
             try {
@@ -248,14 +249,14 @@ public class JHttp {
                 }
             }
         }
-        return this.getErrorMessage();
+        return this.errorMessage();
     }
 
     public int code() {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.execute();
         }
-        if (this.getErrorCode() > 0) {
+        if (this.errorCode() > 0) {
             try {
                 setErrorCode(this.getHttpURLConnection().getResponseCode());
             } catch (IOException ex) {
@@ -264,14 +265,14 @@ public class JHttp {
             }
 
         }
-        return this.getErrorCode();
+        return this.errorCode();
     }
 
     public String message() {
-        if (this.getErrorCode() == 0) {
+        if (this.errorCode() == 0) {
             this.execute();
         }
-        if (this.getErrorCode() > 0) {
+        if (this.errorCode() > 0) {
             try {
                 String message = this.getHttpURLConnection().getResponseMessage();
                 setErrorMessage(message);
@@ -281,7 +282,29 @@ public class JHttp {
             }
 
         }
-        return this.getErrorMessage();
+        return this.errorMessage();
+    }
+
+    public String errorMessage() {
+        return errorMessage;
+    }
+
+    public int errorCode() {
+        return errorCode;
+    }
+
+    @Override
+    public String toString() {
+        return this.getHttpURLConnection().getURL().toString();
+    }
+
+    //========================================================================//
+    private URL getUrl() {
+        return url;
+    }
+
+    private void setUrl(URL url) {
+        this.url = url;
     }
 
     private HttpURLConnection getHttpURLConnection() {
@@ -292,28 +315,21 @@ public class JHttp {
         this.httpURLConnection = httpURLConnection;
     }
 
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    private void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
     private void setErrorMessage(Exception ex) {
         String strEx = ex.toString();
         String text = strEx.substring(strEx.indexOf(":") + 1);
         this.errorMessage = text.trim();
     }
 
-    public int getErrorCode() {
-        return errorCode;
+    private void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 
     private void setErrorCode(int errorCode) {
         this.errorCode = errorCode;
     }
 
+    //========================================================================//
     private static String encode(String text) {
         return encode(text, JHttp.CHARSET_DEFAULT);
     }
@@ -327,7 +343,7 @@ public class JHttp {
         return encoder;
     }
 
-    //
+    //========================================================================//
     public static final String METHOD_POST = "POST";
     public static final String METHOD_GET = "GET";
     public static final String METHOD_DELETE = "DELETE";
@@ -340,11 +356,11 @@ public class JHttp {
     public static final String CHARSET_DEFAULT = CHARSET_UTF8;
     //
     public static final String USERAGENT_DESKTOP = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36";
-    public static final String USERAGENT_MOBILE = "";
-    public static final String USERAGENT_TABLET = "";
-    public static final String USERAGENT_IPHONE = "";
-    public static final String USERAGENT_ANDROID = "";
-    public static final String USERAGENT_JAVAMOBILE = "";
+    public static final String USERAGENT_MOBILE = "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; Lumia 950) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.14977";
+    public static final String USERAGENT_TABLET = "Mozilla/5.0 (iPad; CPU OS 12_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Mobile/15E148 Safari/604.1";
+    public static final String USERAGENT_SAFARI = "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1";
+    public static final String USERAGENT_ANDROID = "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; SCH-I535 Build/KOT49H) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30";
+    public static final String USERAGENT_JAVAMOBILE = "Opera/9.80 (J2ME/MIDP; Opera Mini/5.1.21214/28.2725; U; ru) Presto/2.8.119 Version/11.10";
     public static final String USERAGENT_DEFAULT = USERAGENT_DESKTOP;
     //
     public static final int CODE_OK = 200;
@@ -383,11 +399,10 @@ public class JHttp {
     public static final int CODE_UNAVAILABLE = 503;
     public static final int CODE_GATEWAY_TIMEOUT = 504;
     public static final int CODE_VERSION = 505;
-    //
+    //========================================================================//
+    private URL url;
     private HttpURLConnection httpURLConnection;
     //
     private String errorMessage;
     private int errorCode;
-    //
-
 }
