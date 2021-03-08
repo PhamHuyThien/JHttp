@@ -25,7 +25,12 @@ JHttp rq = JHttp.get("https://11x7.xyz/", true, "name", "Phạm Huy Thiên", "bi
 System.out.println(rq.body());
 // GET https://11x7.xyz/?name=Ph%E1%BA%A1m%20Huy%20Thi%C3%AAn&birthday=11%2F7%2F2000
 ```
-
+### Using arrays as query parameters
+```java
+int[] ids = new int[] { 22, 23 };
+HttpRequest request = HttpRequest.get("https://11x7.xyz/", true, "id", ids);
+System.out.println(request.toString()); // GET http://google.com?id[]=22&id[]=23
+```
 ### Sử dụng cookie và user-agent nhanh
 ```java
 String body = JHttp.get("https://11x7.xyz/").userAgent().cookie("Thien=Depzaii").body();
@@ -80,6 +85,9 @@ System.out.println("errorCode: "+errorCode+", errorMessage: "+errorMessage);
 - `errorMessage(): String` lý do gây ra lỗi để debug
 
 ## Lịch sử cập nhật
+#### v1.0.3
+- Cập nhật lại toàn bộ source cho mượn mà hơn
+- Update lại hàm `send(boolean encode, Object... pairs): JHttp` và các hàm tương tự.
 
 #### v1.0.2
 - sử dụng `HttpsURLConnection` cho những request có protocol https

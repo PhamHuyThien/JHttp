@@ -32,23 +32,13 @@ public class JHttp {
     }
 
     public static JHttp get(String url, boolean encode, Object... pairs) {
-        StringBuilder sbParams = new StringBuilder();
-        for (int i = 0; i < pairs.length; i += 2) {
-            String key = pairs[i].toString().trim();
-            String value = i + 1 < pairs.length ? pairs[i + 1].toString().trim() : "";
-            key = encode ? JHttp.encode(key) : key;
-            value = encode ? JHttp.encode(value) : value;
-            sbParams.append(key).append("=").append(value).append("&");
-        }
-        String param = sbParams.toString().replaceFirst("&$", "");
-        url = url.trim();
-        return new JHttp(url + "?" + param);
+        return new JHttp(url.trim() + "?" + JHttp.encode(encode, pairs));
     }
 
     //========================================================================//
     public JHttp(String url) {
         try {
-            this.setUrl(new URL(url));
+            this.setUrl(new URL(url.trim()));
             URLConnection urlConnection = this.getUrl().openConnection();
             this.setHttpURLConnection((HttpURLConnection) urlConnection);
             if (this.getUrl().getProtocol().equals("https")) {
@@ -76,12 +66,7 @@ public class JHttp {
     }
 
     public JHttp header(String key, String value) {
-        if (this.errorCode() == 0) {
-            key = key.trim().toLowerCase();
-            value = value.trim();
-            this.getHttpURLConnection().setRequestProperty(key, value);
-        }
-        return this;
+        return this.headers(key + ":" + value);
     }
 
     public JHttp headers(String headers) {
@@ -89,9 +74,9 @@ public class JHttp {
             String[] strHeaders = headers.split("\\n");
             for (String strHeader : strHeaders) {
                 String[] pairs = strHeader.split(":");
-                String key = pairs[0].trim();
+                String key = pairs[0].trim().toLowerCase();
                 String value = pairs.length > 0 ? pairs[1].trim() : "";
-                this.getHttpURLConnection().setRequestProperty(key.toLowerCase(), value);
+                this.getHttpURLConnection().setRequestProperty(key, value);
             }
         }
         return this;
@@ -106,10 +91,7 @@ public class JHttp {
     }
 
     public JHttp userAgent() {
-        if (this.errorCode() == 0) {
-            this.userAgent(JHttp.USERAGENT_DEFAULT);
-        }
-        return this;
+        return this.userAgent(JHttp.USERAGENT_DEFAULT);
     }
 
     public JHttp userAgent(String userAgent) {
@@ -124,8 +106,8 @@ public class JHttp {
             try {
                 this.getHttpURLConnection().connect();
                 this.setErrorCode(this.getHttpURLConnection().getResponseCode());
-                this.setErrorMessage("Request connected!");
-            } catch (IOException ex) {
+                this.setErrorMessage(this.getHttpURLConnection().getResponseMessage());
+            } catch (IOException | IllegalArgumentException ex) {
                 setErrorCode(-4);
                 setErrorMessage(ex);
             }
@@ -134,25 +116,11 @@ public class JHttp {
     }
 
     public JHttp send(boolean encode, Object... pairs) {
-        if (this.errorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
-            StringBuilder sbParams = new StringBuilder();
-            for (int i = 0; i < pairs.length; i += 2) {
-                String key = pairs[i].toString().trim();
-                String value = i + 1 < pairs.length ? pairs[i + 1].toString().trim() : "";
-                key = encode ? JHttp.encode(key) : key;
-                value = encode ? JHttp.encode(value) : value;
-                sbParams.append(key).append("=").append(value).append("&");
-            }
-            this.send(sbParams.toString().replaceFirst("&$", ""));
-        }
-        return this;
+        return this.send(JHttp.encode(encode, pairs));
     }
 
     public JHttp send(String param) {
-        if (this.errorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
-            this.send(param, CHARSET_DEFAULT);
-        }
-        return this;
+        return this.send(param, CHARSET_DEFAULT);
     }
 
     public JHttp send(String param, String charset) {
@@ -162,8 +130,7 @@ public class JHttp {
             try {
                 OutputStream outputStream = this.getHttpURLConnection().getOutputStream();
                 outputStream.write(param.getBytes(charset));
-                this.setErrorCode(1);
-                this.setErrorMessage("Request connected!");
+                this.execute();
             } catch (IOException ex) {
                 this.setErrorCode(-5);
                 this.setErrorMessage(ex);
@@ -173,22 +140,20 @@ public class JHttp {
     }
 
     public String header(String key) {
-        if (this.errorCode() == 0) {
-            this.execute();
-        }
-        if (this.errorCode() > 0) {
-            Map<String, String> mHeaders = this.headers();
-            if (mHeaders.containsKey(key.toLowerCase())) {
-                return mHeaders.get(key.toLowerCase());
+        Map<String, String> mHeaders = this.headers();
+        if (mHeaders != null) {
+            key = key.toLowerCase();
+            if (mHeaders.containsKey(key)) {
+                return mHeaders.get(key);
+            } else {
+                return "";
             }
         }
         return this.errorMessage();
     }
 
     public Map<String, String> headers() {
-        if (this.errorCode() == 0) {
-            this.execute();
-        }
+        this.execute();
         if (this.errorCode() > 0) {
             Map<String, List<String>> mHeaders = this.getHttpURLConnection().getHeaderFields();
             HashMap<String, String> hmResuls = new HashMap<>();
@@ -210,19 +175,11 @@ public class JHttp {
     }
 
     public String body() {
-        if (this.errorCode() == 0) {
-            this.execute();
-        }
-        if (this.errorCode() > 0) {
-            return this.body(JHttp.CHARSET_DEFAULT);
-        }
-        return this.errorMessage();
+        return this.body(JHttp.CHARSET_DEFAULT);
     }
 
     public String body(String charset) {
-        if (this.errorCode() == 0) {
-            this.execute();
-        }
+        this.execute();
         if (this.errorCode() > 0) {
             BufferedReader bufferedReader = null;
             InputStreamReader inputStreamReader = null;
@@ -253,35 +210,12 @@ public class JHttp {
     }
 
     public int code() {
-        if (this.errorCode() == 0) {
-            this.execute();
-        }
-        if (this.errorCode() > 0) {
-            try {
-                setErrorCode(this.getHttpURLConnection().getResponseCode());
-            } catch (IOException ex) {
-                this.setErrorCode(-8);
-                this.setErrorMessage(ex);
-            }
-
-        }
+        this.execute();
         return this.errorCode();
     }
 
     public String message() {
-        if (this.errorCode() == 0) {
-            this.execute();
-        }
-        if (this.errorCode() > 0) {
-            try {
-                String message = this.getHttpURLConnection().getResponseMessage();
-                setErrorMessage(message);
-            } catch (IOException ex) {
-                this.setErrorCode(-9);
-                this.setErrorMessage(ex);
-            }
-
-        }
+        this.execute();
         return this.errorMessage();
     }
 
@@ -295,7 +229,7 @@ public class JHttp {
 
     @Override
     public String toString() {
-        return this.getHttpURLConnection().getURL().toString();
+        return this.getUrl().toString();
     }
 
     //========================================================================//
@@ -317,7 +251,14 @@ public class JHttp {
 
     private void setErrorMessage(Exception ex) {
         String strEx = ex.toString();
-        String text = strEx.substring(strEx.indexOf(":") + 1);
+        char[] chars = strEx.toCharArray();
+        int i;
+        for (i = chars.length - 1; i > -1; i--) {
+            if (chars[i] == '.') {
+                break;
+            }
+        }
+        String text = strEx.substring(i + 1);
         this.errorMessage = text.trim();
     }
 
@@ -330,6 +271,73 @@ public class JHttp {
     }
 
     //========================================================================//
+    private static String encode(boolean encode, Object... pairs) {
+        StringBuilder sbParams = new StringBuilder();
+        for (int i = 0; i < pairs.length; i += 2) {
+            Object objKey = encode ? JHttp.encode(pairs[i].toString()) : pairs[i];
+            Object objvalue = i + 1 < pairs.length ? pairs[i + 1] : "";
+            Object[] objValues = JHttp.cast(objvalue);
+            if (objValues != null) {
+                objKey += encode ? JHttp.encode("[]") : "[]";
+                for (Object objVal : objValues) {
+                    String valueEncode = encode ? JHttp.encode(objVal.toString()) : objVal.toString();
+                    sbParams.append(objKey).append("=").append(valueEncode).append("&");
+                }
+            } else {
+                objvalue = encode ? JHttp.encode(objvalue.toString()) : objvalue;
+                sbParams.append(objKey).append("=").append(objvalue).append("&");
+            }
+        }
+        return sbParams.toString().replaceFirst("&$", "");
+    }
+
+    private static Object[] cast(Object o) {
+        Object[] objects = null;
+        Class classInfo = o.getClass();
+        if (classInfo.isArray()) {
+            switch (classInfo.getComponentType().getName()) {
+                case "int":
+                    int[] intTmps = (int[]) o;
+                    objects = new Object[intTmps.length];
+                    for (int i = 0; i < intTmps.length; i++) {
+                        objects[i] = (Object) intTmps[i];
+                    }
+                    break;
+                case "long":
+                    long[] longTmps = (long[]) o;
+                    objects = new Object[longTmps.length];
+                    for (int i = 0; i < longTmps.length; i++) {
+                        objects[i] = (Object) longTmps[i];
+                    }
+                    break;
+                case "double":
+                    double[] doubleTmps = (double[]) o;
+                    objects = new Object[doubleTmps.length];
+                    for (int i = 0; i < doubleTmps.length; i++) {
+                        objects[i] = (Object) doubleTmps[i];
+                    }
+                    break;
+                case "float":
+                    float[] floatTmps = (float[]) o;
+                    objects = new Object[floatTmps.length];
+                    for (int i = 0; i < floatTmps.length; i++) {
+                        objects[i] = (Object) floatTmps[i];
+                    }
+                    break;
+                case "char":
+                    char[] charTmps = (char[]) o;
+                    objects = new Object[charTmps.length];
+                    for (int i = 0; i < charTmps.length; i++) {
+                        objects[i] = (Object) charTmps[i];
+                    }
+                    break;
+                default:
+                    objects = (Object[]) o;
+            }
+        }
+        return objects;
+    }
+
     private static String encode(String text) {
         return encode(text, JHttp.CHARSET_DEFAULT);
     }
@@ -350,8 +358,8 @@ public class JHttp {
     public static final String METHOD_TRADE = "TRADE";
     public static final String METHOD_CONNECT = "CONNECT";
     //
+    public static final String CHARSET_ASCII = "ASCII";
     public static final String CHARSET_UTF8 = "UTF-8";
-    public static final String CHARSET_US_ASCII = "US-ASCII";
     public static final String CHARSET_UTF16 = "UTF-16";
     public static final String CHARSET_DEFAULT = CHARSET_UTF8;
     //
