@@ -1,6 +1,6 @@
 # `JHttp` - code request very simple.
-Một thư viện tiện lợi đơn giản để sử dụng `HttpURLConnection` và `HttpsURLConnection`.  
-Tham khảo [`HttpRequest-kevinsawicki`](https://github.com/kevinsawicki/http-request), nhưng thư viện này đã lỗi thời, Không được update trong nhiều năm.  
+Một thư viện tiện lợi đơn giản, nhẹ và dễ sử dụng, không sử dụng thư viện ngoài.  
+Tham khảo [`HttpRequest-kevinsawicki`](https://github.com/kevinsawicki/http-request), nhưng thư viện này không hoạt động được khi request https sử dụng proxy có authenticate.    
 `JHttp` sẽ giải quyết những gì mà [`HttpRequest-kevinsawicki`](https://github.com/kevinsawicki/http-request) còn thiếu sót.  
 
 ## Cách cài đặt
@@ -9,14 +9,21 @@ Tham khảo [`HttpRequest-kevinsawicki`](https://github.com/kevinsawicki/http-re
 - Trong IDE của bạn thêm thư viện vào Jar Library.
 
 ## Ví dụ
-### Thực hiện việc get Request và lấy code status trả về
+### Thực hiện việc get request và lấy code status trả về
 ```java
 int code = JHttp.get("https://11x7.xyz/").code();
 System.out.println(code);
 ```
-### Thực hiện get Request và lấy body html trả về
+### Thực hiện get request và lấy body html trả về
 ```java
 String body = JHttp.get("https://11x7.xyz/").body();
+System.out.println(body);
+```
+### Thực hiện post request và get response dạng json
+```java
+JJson json = JJson.parse("{\"user\": \"PhamHuyThen\", \"birthday\": \"11/07\"}");
+String body = JHttp.post("https://11x7.xyz/").send(json).body();
+// JJson respJson = JHttp.post("https://11x7.xyz/").send(json).json(); //lấy dữ liệu trả về dạng json
 System.out.println(body);
 ```
 ### Adding query parameters
@@ -31,6 +38,7 @@ int[] ids = new int[] { 22, 23 };
 HttpRequest request = HttpRequest.get("https://11x7.xyz/", true, "id", ids);
 System.out.println(request.toString()); // GET http://google.com?id[]=22&id[]=23
 ```
+
 ### Sử dụng cookie và user-agent nhanh
 ```java
 String body = JHttp.get("https://11x7.xyz/").userAgent().cookie("Thien=Depzaii").body();
@@ -38,23 +46,33 @@ String body = JHttp.get("https://11x7.xyz/").userAgent().cookie("Thien=Depzaii")
 System.out.println(body);
 ```
 
+### Sử dụng proxy có authenticate
+```java
+String body = JHttp.get("https://11x7.xyz/").proxy("proxy.11x7.xyz", 6789).auth("userName", "p4ssw0rd").body();
+System.out.println(body);
+```
+
 ### Lấy giá trị header
 ```java
-String abc = JHttp.get("https://11x7.xyz/").header("set-cookie");
-System.out.println("header name 'set-cookie'=" + abc);
+String cookie = JHttp.get("https://11x7.xyz/").header("Set-Cookie");
+System.out.println("header name 'set-cookie'=" + cookie);
 ```
 ### Perform a POST request with some data and get the status of the response
 ```java
 int response = JHttp.post("https://11x7.xyz/").send("name=Ph%E1%BA%A1m%20Huy%20Thi%C3%AAn").code();
 // int response = JHttp.post("https://11x7.xyz/").send(true, name, "Phạm Huy Thiên").code();
+System.out.println(response);
 ```
-### Debug Error (New)
+### debug error
 ```java
 JHttp rq = JHttp.post("https://11x7.xyz/").send("name=thiendepzaii").execute();
 int errorCode = rq.errorCode();
 int msg = rq.errorMessage();
 System.out.println("errorCode: "+errorCode+", errorMessage: "+errorMessage);
 ```
+với errorCode = 0, request chưa được thực hiện.  
+với errorCode < 0, đã sảy ra exception (chi tiết xem errorMessage).  
+với errorCode > 0, request thành công và trả về mã.  
 
 ## Cấu trúc
 
@@ -63,28 +81,51 @@ System.out.println("errorCode: "+errorCode+", errorMessage: "+errorMessage);
 - `get(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là get, có param là pairs(key, value) encode sẽ mã hóa đầu vào
 - `post(String url): JHttp` thực hiện tạo JHttp có method là post
 - `post(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
+- `put(String url): JHttp` thực hiện tạo JHttp có method là post
+- `put(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
+- `delete(String url): JHttp` thực hiện tạo JHttp có method là post
+- `delete(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
+- `connect(String url): JHttp` thực hiện tạo JHttp có method là post
+- `connect(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
+- `options(String url): JHttp` thực hiện tạo JHttp có method là post
+- `options(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
 - `method(String method): JHttp` set method cho request (mặc định `JHttp.METHOD_GET`)
 - `header(String key, String value): JHttp` set header cho request
+- `headers(Map<String, String> headers): JHttp` set header cho request
 - `headers(String headers): JHttp` set list string header cho request (key:value\nkey1:value1\n...)
 - `cookie(String cookie): JHttp` set cookie cho request
 - `userAgent(): JHttp` set user-agent mặc định cho request (mặc định `JHttp.USERAGENT_DEFAULT`)
 - `userAgent(String userAgent): JHttp` set user agent cho request
-- `execute(): JHttp` chạy request (không cần sử dụng cũng được).
+- `proxy(String host, int port): JHttp` set Proxy cho request
+- `auth(String user, String pass): JHttp` set auth proxy cho request
+- `timeout(int milis): JHttp` set timeout cho request
 - `send(Object... pairs): JHttp` gửi dữ liệu đi (định dạng `(key, value, key1, value1, ...)`) (mặc định không encode).
 - `send(boolean encode, Object... pairs): JHttp` gửi dữ liệu đi (định dạng `(key, value, key1, value1, ...)`).
 - `send(String param): JHttp` gửi dữ liệu đi (định dạng `key=value&key1=value1&...`) (mặc định `JHttp.CHARSET_UTF8`)
+- `send(JJson json): JHttp` gửi dữ liệu đi (định dạng json) (mặc định `content-type: application/json`)
 - `send(String param, String charset): JHttp` gửi dữ liệu đi (định dạng `key=value&key1=value1&...`)
+- `execute(): JHttp` chạy request (không cần sử dụng cũng được).
 ### get
 - `header(String key): String` get header có name là String key
 - `headers(): Map<String, String>` get all header có trong request
 - `body(): String` lấy raw html (mặc định `JHttp.CHARSET_UTF8`)
-- `body(String charset): String` lấy raw html
+- `json(): JJson` chuyển body sang json
 - `code(): int` mã code response
 - `message(): String` string code response
 - `errorCode(): int` lấy mã lỗi để debug
 - `errorMessage(): String` lý do gây ra lỗi để debug
 
 ## Lịch sử cập nhật
+
+#### v1.0.4
+- thay HttpURLConnection sang HttpSocketConnection (lib riêng)
+- bỏ `body(String charset): String`, mặc định `JHttp.CHARSET_UTF8`
+- thêm các option function static các method cho tiện
+- thêm `proxy(String host, int port): JHttp` và `auth(String user, String pass): JHttp`
+- thêm `timeout(int milis): JHttp`
+- thêm `json(): JJson` chuyển body sang json
+- thêm `send(JJson json): JHttp` gửi dữ liệu đi (định dạng json)
+
 #### v1.0.3
 - Cập nhật lại toàn bộ source cho mượn mà hơn
 - Update lại hàm `send(boolean encode, Object... pairs): JHttp` và các hàm tương tự.
@@ -107,3 +148,4 @@ System.out.println("errorCode: "+errorCode+", errorMessage: "+errorMessage);
 - Tên: Phạm Huy Thiên (SystemError)
 - Cảm ơn: [`HttpRequest-kevinsawicki`](https://github.com/kevinsawicki/http-request)
 - Liên hệ: [`Facebook`](https://fb.com/thiendz.systemerror)
+- Sử dụng: JJson v2.0.0 và HttpSocketConnection v1.3

@@ -1,30 +1,58 @@
-package org.http.simple;
+package org.thiendz.net.simple;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.net.ssl.HttpsURLConnection;
+import org.thiendz.json.JJson;
+import org.thiendz.net.HttpSocketConnection;
 
 public class JHttp {
 
     //========================================================================//
+    public static JHttp connect(String url, boolean encode, Object... pairs) {
+        return get(url, encode, pairs).method(METHOD_CONNECT);
+    }
+
+    public static JHttp connect(String url) {
+        return get(url).method(METHOD_CONNECT);
+    }
+
+    public static JHttp options(String url, boolean encode, Object... pairs) {
+        return get(url, encode, pairs).method(METHOD_OPTIONS);
+    }
+
+    public static JHttp options(String url) {
+        return get(url).method(METHOD_OPTIONS);
+    }
+
+    public static JHttp delete(String url, boolean encode, Object... pairs) {
+        return get(url, encode, pairs).method(METHOD_DELETE);
+    }
+
+    public static JHttp delete(String url) {
+        return get(url).method(METHOD_DELETE);
+    }
+
+    public static JHttp put(String url, boolean encode, Object... pairs) {
+        return get(url, encode, pairs).method(METHOD_PUT);
+    }
+
+    public static JHttp put(String url) {
+        return get(url).method(METHOD_PUT);
+    }
+
     public static JHttp post(String url, boolean encode, Object... pairs) {
-        return JHttp.get(url, encode, pairs).method(JHttp.METHOD_POST);
+        return get(url, encode, pairs).method(METHOD_POST);
     }
 
     public static JHttp post(String url) {
-        return JHttp.get(url).method(JHttp.METHOD_POST);
+        return get(url).method(METHOD_POST);
     }
 
     public static JHttp get(String url) {
@@ -32,83 +60,105 @@ public class JHttp {
     }
 
     public static JHttp get(String url, boolean encode, Object... pairs) {
-        return new JHttp(url.trim() + "?" + JHttp.encode(encode, pairs));
+        return new JHttp(url.trim() + "?" + encode(encode, pairs));
     }
 
     //========================================================================//
     public JHttp(String url) {
         try {
-            this.setUrl(new URL(url.trim()));
-            URLConnection urlConnection = this.getUrl().openConnection();
-            this.setHttpURLConnection((HttpURLConnection) urlConnection);
-            if (this.getUrl().getProtocol().equals("https")) {
-                this.setHttpURLConnection((HttpsURLConnection) getHttpURLConnection());
-            }
+            setUrl(new URL(url));
+            setHttpSocketConnection(new HttpSocketConnection(getUrl()));
         } catch (MalformedURLException ex) {
-            this.setErrorCode(-1);
-            this.setErrorMessage(ex);
-        } catch (IOException ex) {
-            this.setErrorCode(-2);
-            this.setErrorMessage(ex);
+            setErrorCode(-1);
+            setErrorMessage(ex);
         }
     }
 
     public JHttp method(String method) {
-        if (this.errorCode() == 0) {
-            try {
-                this.getHttpURLConnection().setRequestMethod(method);
-            } catch (ProtocolException ex) {
-                this.setErrorCode(-3);
-                this.setErrorMessage(ex);
+        if (errorCode() == 0) {
+            getHttpSocketConnection().setRequestMethod(method);
+        }
+        return this;
+    }
+
+    public JHttp headers(String headers) {
+        if (headers != null) {
+            String[] strHeaders = headers.split("\\n");
+            for (String strHeader : strHeaders) {
+                String[] pairs = strHeader.split(":");
+                String key = pairs[0].trim();
+                String value = pairs.length > 0 ? pairs[1].trim() : "";
+                header(key, value);
             }
         }
         return this;
     }
 
-    public JHttp header(String key, String value) {
-        return this.headers(key + ":" + value);
+    public JHttp headers(Map<String, String> map) {
+        if (map != null) {
+            map.forEach((key, value) -> {
+                header(key, value);
+            });
+        }
+        return this;
     }
 
-    public JHttp headers(String headers) {
-        if (this.errorCode() == 0) {
-            String[] strHeaders = headers.split("\\n");
-            for (String strHeader : strHeaders) {
-                String[] pairs = strHeader.split(":");
-                String key = pairs[0].trim().toLowerCase();
-                String value = pairs.length > 0 ? pairs[1].trim() : "";
-                this.getHttpURLConnection().setRequestProperty(key, value);
-            }
+    public JHttp header(Object key, Object value) {
+        if (errorCode() == 0) {
+            String k = key.toString().toLowerCase();
+            String v = value.toString();
+            getHttpSocketConnection().setRequestProperty(k, v);
         }
         return this;
     }
 
     public JHttp cookie(String cookie) {
-        if (this.errorCode() == 0) {
-            cookie = cookie.trim();
-            this.getHttpURLConnection().setRequestProperty("cookie", cookie);
+        if (errorCode() == 0) {
+            getHttpSocketConnection().setRequestProperty(HEADER_KEY_COOKIE, cookie);
         }
         return this;
     }
 
     public JHttp userAgent() {
-        return this.userAgent(JHttp.USERAGENT_DEFAULT);
+        return userAgent(USERAGENT_DEFAULT);
     }
 
     public JHttp userAgent(String userAgent) {
-        if (this.errorCode() == 0) {
-            this.getHttpURLConnection().setRequestProperty("user-agent", userAgent);
+        if (errorCode() == 0) {
+            getHttpSocketConnection().setRequestProperty(HEADER_KEY_USER_AGENT, userAgent);
+        }
+        return this;
+    }
+
+    public JHttp proxy(String host, int port) {
+        if (errorCode() == 0) {
+            getHttpSocketConnection().setProxy(host, port);
+        }
+        return this;
+    }
+
+    public JHttp auth(String user, String pass) {
+        if (errorCode() == 0) {
+            getHttpSocketConnection().setProxyAuth(user, pass);
+        }
+        return this;
+    }
+
+    public JHttp timeout(int milis) {
+        if (errorCode() == 0) {
+            getHttpSocketConnection().setConnectTimeout(milis);
         }
         return this;
     }
 
     public JHttp execute() {
-        if (this.errorCode() == 0) {
+        if (errorCode() == 0) {
             try {
-                this.getHttpURLConnection().connect();
-                this.setErrorCode(this.getHttpURLConnection().getResponseCode());
-                this.setErrorMessage(this.getHttpURLConnection().getResponseMessage());
-            } catch (IOException | IllegalArgumentException ex) {
-                setErrorCode(-4);
+                getHttpSocketConnection().connect();
+                setErrorCode(getHttpSocketConnection().getResponseCode());
+                setErrorMessage(getHttpSocketConnection().getResponseMessage());
+            } catch (IOException ex) {
+                setErrorCode(-2);
                 setErrorMessage(ex);
             }
         }
@@ -116,107 +166,94 @@ public class JHttp {
     }
 
     public JHttp send(boolean encode, Object... pairs) {
-        return this.send(JHttp.encode(encode, pairs));
+        return send(encode(encode, pairs));
     }
 
     public JHttp send(String param) {
-        return this.send(param, CHARSET_DEFAULT);
+        return send(param, CHARSET_DEFAULT);
+    }
+
+    public JHttp send(JJson json) {
+        header(HEADER_KEY_CONTENT_TYPE, HEADER_VALUE_CONTENT_TYPE_JSON);
+        return send(json.toStr(), CHARSET_DEFAULT);
     }
 
     public JHttp send(String param, String charset) {
-        if (this.errorCode() == 0 && this.getHttpURLConnection().getRequestMethod().equals(JHttp.METHOD_POST)) {
-            this.header("content-length", param.getBytes().length + "");
-            this.getHttpURLConnection().setDoOutput(true);
+        if (errorCode() == 0) {
+            final int HEADER_VALUE_CONTENT_LENGTH = param.getBytes().length;
+            if (!getHttpSocketConnection().getRequestProperties().containsKey(HEADER_KEY_CONTENT_TYPE)) {
+                getHttpSocketConnection().setRequestProperty(HEADER_KEY_CONTENT_TYPE, HEADER_VALUE_CONTENT_TYPE_DEFAULT);
+            }
+            header(HEADER_KEY_CONTENT_LENGTH, HEADER_VALUE_CONTENT_LENGTH);
             try {
-                OutputStream outputStream = this.getHttpURLConnection().getOutputStream();
+                OutputStream outputStream = getHttpSocketConnection().getOutputStream();
                 outputStream.write(param.getBytes(charset));
-                this.execute();
+                execute();
             } catch (IOException ex) {
-                this.setErrorCode(-5);
-                this.setErrorMessage(ex);
+                setErrorCode(-3);
+                setErrorMessage(ex);
             }
         }
         return this;
     }
 
     public String header(String key) {
-        Map<String, String> mHeaders = this.headers();
-        if (mHeaders != null) {
-            key = key.toLowerCase();
-            if (mHeaders.containsKey(key)) {
-                return mHeaders.get(key);
-            } else {
-                return "";
+        execute();
+        if (errorCode() > 0) {
+            try {
+                List<String> lValue = getHttpSocketConnection().getHeaderField(key);
+                return lValue != null ? String.join("; ", lValue) : "";
+            } catch (IOException ex) {
+                setErrorCode(-4);
+                setErrorMessage(ex);
             }
-        }
-        return this.errorMessage();
-    }
-
-    public Map<String, String> headers() {
-        this.execute();
-        if (this.errorCode() > 0) {
-            Map<String, List<String>> mHeaders = this.getHttpURLConnection().getHeaderFields();
-            HashMap<String, String> hmResuls = new HashMap<>();
-            mHeaders.entrySet().forEach((entry) -> {
-                String key = entry.getKey();
-                List<String> lValues = entry.getValue();
-                StringBuilder sbValues = new StringBuilder();
-                lValues.forEach((value) -> {
-                    sbValues.append(value).append(lValues.size() > 1 ? "; " : "");
-                });
-                if (key == null) {
-                    key = this.getHttpURLConnection().getRequestMethod();
-                }
-                hmResuls.put(key.toLowerCase(), sbValues.toString());
-            });
-            return hmResuls;
         }
         return null;
     }
 
-    public String body() {
-        return this.body(JHttp.CHARSET_DEFAULT);
-    }
-
-    public String body(String charset) {
-        this.execute();
-        if (this.errorCode() > 0) {
-            BufferedReader bufferedReader = null;
-            InputStreamReader inputStreamReader = null;
+    public Map<String, String> headers() {
+        execute();
+        if (errorCode() > 0) {
             try {
-                StringBuilder sbBody = new StringBuilder();
-                inputStreamReader = new InputStreamReader(this.getHttpURLConnection().getInputStream(), charset);
-                bufferedReader = new BufferedReader(inputStreamReader);
-                String c;
-                while ((c = bufferedReader.readLine()) != null) {
-                    sbBody.append(c).append("\n");
-                }
-                return sbBody.toString().replaceFirst("\\n$", "");
-            } catch (UnsupportedEncodingException ex) {
-                setErrorCode(-6);
-                setErrorMessage(ex);
+                Map<String, List<String>> mHeaders = getHttpSocketConnection().getHeaderFields();
+                HashMap<String, String> hmResuls = new HashMap<>();
+                mHeaders.forEach((key, listValue) -> {
+                    hmResuls.put(key, String.join("; ", listValue));
+                });
+                return hmResuls;
             } catch (IOException ex) {
-                setErrorCode(-7);
+                setErrorCode(-5);
                 setErrorMessage(ex);
-            } finally {
-                try {
-                    bufferedReader.close();
-                    inputStreamReader.close();
-                } catch (IOException | NullPointerException ex) {
-                }
             }
         }
-        return this.errorMessage();
+        return null;
+    }
+
+    public JJson json() {
+        return JJson.parse(body());
+    }
+
+    public String body() {
+        execute();
+        if (errorCode() > 0) {
+            try {
+                return getHttpSocketConnection().getResponseBody();
+            } catch (IOException ex) {
+                setErrorCode(-6);
+                setErrorMessage(ex);
+            }
+        }
+        return null;
     }
 
     public int code() {
-        this.execute();
-        return this.errorCode();
+        execute();
+        return errorCode();
     }
 
     public String message() {
-        this.execute();
-        return this.errorMessage();
+        execute();
+        return errorMessage();
     }
 
     public String errorMessage() {
@@ -229,7 +266,7 @@ public class JHttp {
 
     @Override
     public String toString() {
-        return this.getUrl().toString();
+        return getUrl().toString();
     }
 
     //========================================================================//
@@ -241,12 +278,12 @@ public class JHttp {
         this.url = url;
     }
 
-    private HttpURLConnection getHttpURLConnection() {
-        return httpURLConnection;
+    private HttpSocketConnection getHttpSocketConnection() {
+        return httpSocketConnection;
     }
 
-    private void setHttpURLConnection(HttpURLConnection httpURLConnection) {
-        this.httpURLConnection = httpURLConnection;
+    private void setHttpSocketConnection(HttpSocketConnection httpSocketConnection) {
+        this.httpSocketConnection = httpSocketConnection;
     }
 
     private void setErrorMessage(Exception ex) {
@@ -259,7 +296,7 @@ public class JHttp {
             }
         }
         String text = strEx.substring(i + 1);
-        this.errorMessage = text.trim();
+        errorMessage = text.trim();
     }
 
     private void setErrorMessage(String errorMessage) {
@@ -274,17 +311,17 @@ public class JHttp {
     private static String encode(boolean encode, Object... pairs) {
         StringBuilder sbParams = new StringBuilder();
         for (int i = 0; i < pairs.length; i += 2) {
-            Object objKey = encode ? JHttp.encode(pairs[i].toString()) : pairs[i];
+            Object objKey = encode ? encode(pairs[i].toString()) : pairs[i];
             Object objvalue = i + 1 < pairs.length ? pairs[i + 1] : "";
-            Object[] objValues = JHttp.cast(objvalue);
+            Object[] objValues = cast(objvalue);
             if (objValues != null) {
-                objKey += encode ? JHttp.encode("[]") : "[]";
+                objKey += encode ? encode("[]") : "[]";
                 for (Object objVal : objValues) {
-                    String valueEncode = encode ? JHttp.encode(objVal.toString()) : objVal.toString();
+                    String valueEncode = encode ? encode(objVal.toString()) : objVal.toString();
                     sbParams.append(objKey).append("=").append(valueEncode).append("&");
                 }
             } else {
-                objvalue = encode ? JHttp.encode(objvalue.toString()) : objvalue;
+                objvalue = encode ? encode(objvalue.toString()) : objvalue;
                 sbParams.append(objKey).append("=").append(objvalue).append("&");
             }
         }
@@ -339,7 +376,7 @@ public class JHttp {
     }
 
     private static String encode(String text) {
-        return encode(text, JHttp.CHARSET_DEFAULT);
+        return encode(text, CHARSET_DEFAULT);
     }
 
     private static String encode(String text, String charset) {
@@ -352,11 +389,25 @@ public class JHttp {
     }
 
     //========================================================================//
+    public static final String HEADER_KEY_COOKIE = "cookie";
+    public static final String HEADER_KEY_USER_AGENT = "user-agent";
+    public static final String HEADER_KEY_CONTENT_TYPE = "content-type";
+    public static final String HEADER_KEY_CONTENT_LENGTH = "content-length";
+    public static final String HEADER_KEY_ACCEPT = "accept";
+    //
+    public static final String HEADER_VALUE_CONTENT_TYPE_DEFAULT = "application/x-www-form-urlencoded";
+    public static final String HEADER_VALUE_ACCEPT_DEFAULT = "*/*";
+    public static final String HEADER_VALUE_CONTENT_TYPE_JSON = "application/json";
+    //
     public static final String METHOD_POST = "POST";
+    public static final String METHOD_PUT = "PUT";
     public static final String METHOD_GET = "GET";
     public static final String METHOD_DELETE = "DELETE";
     public static final String METHOD_TRADE = "TRADE";
     public static final String METHOD_CONNECT = "CONNECT";
+    public static final String METHOD_OPTIONS = "OPTIONS";
+    public static final String METHOD_PATCH = "PATCH";
+    public static final String METHOD_HEAD = "HEAD";
     //
     public static final String CHARSET_ASCII = "ASCII";
     public static final String CHARSET_UTF8 = "UTF-8";
@@ -409,7 +460,7 @@ public class JHttp {
     public static final int CODE_VERSION = 505;
     //========================================================================//
     private URL url;
-    private HttpURLConnection httpURLConnection;
+    private HttpSocketConnection httpSocketConnection;
     //
     private String errorMessage;
     private int errorCode;
