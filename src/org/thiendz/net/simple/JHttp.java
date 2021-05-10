@@ -151,12 +151,29 @@ public class JHttp {
         return this;
     }
 
-    public JHttp execute() {
+    public JHttp send(boolean encode, Object... params) {
+        return send(encode(encode, params));
+    }
+
+    public JHttp send(JJson json) {
+        header(HEADER_KEY_CONTENT_TYPE, HEADER_VALUE_CONTENT_TYPE_JSON);
+        return send(json.toStr());
+    }
+
+    public JHttp send(String data) {
+        return send(data, CHARSET_DEFAULT);
+    }
+
+    public JHttp send(String data, String charset) {
         if (errorCode() == 0) {
+            final int HEADER_VALUE_CONTENT_LENGTH = data.length();
+            if (!getHttpSocketConnection().getRequestProperties().containsKey(HEADER_KEY_CONTENT_TYPE)) {
+                getHttpSocketConnection().setRequestProperty(HEADER_KEY_CONTENT_TYPE, HEADER_VALUE_CONTENT_TYPE_DEFAULT);
+            }
+            header(HEADER_KEY_CONTENT_LENGTH, HEADER_VALUE_CONTENT_LENGTH);
             try {
-                getHttpSocketConnection().connect();
-                setErrorCode(getHttpSocketConnection().getResponseCode());
-                setErrorMessage(getHttpSocketConnection().getResponseMessage());
+                OutputStream outputStream = getHttpSocketConnection().getOutputStream();
+                outputStream.write(data.getBytes(charset));
             } catch (IOException ex) {
                 setErrorCode(-2);
                 setErrorMessage(ex);
@@ -165,30 +182,12 @@ public class JHttp {
         return this;
     }
 
-    public JHttp send(boolean encode, Object... pairs) {
-        return send(encode(encode, pairs));
-    }
-
-    public JHttp send(String param) {
-        return send(param, CHARSET_DEFAULT);
-    }
-
-    public JHttp send(JJson json) {
-        header(HEADER_KEY_CONTENT_TYPE, HEADER_VALUE_CONTENT_TYPE_JSON);
-        return send(json.toStr(), CHARSET_DEFAULT);
-    }
-
-    public JHttp send(String param, String charset) {
+    public JHttp execute() {
         if (errorCode() == 0) {
-            final int HEADER_VALUE_CONTENT_LENGTH = param.getBytes().length;
-            if (!getHttpSocketConnection().getRequestProperties().containsKey(HEADER_KEY_CONTENT_TYPE)) {
-                getHttpSocketConnection().setRequestProperty(HEADER_KEY_CONTENT_TYPE, HEADER_VALUE_CONTENT_TYPE_DEFAULT);
-            }
-            header(HEADER_KEY_CONTENT_LENGTH, HEADER_VALUE_CONTENT_LENGTH);
             try {
-                OutputStream outputStream = getHttpSocketConnection().getOutputStream();
-                outputStream.write(param.getBytes(charset));
-                execute();
+                getHttpSocketConnection().connect();
+                setErrorCode(getHttpSocketConnection().getResponseCode());
+                setErrorMessage(getHttpSocketConnection().getResponseMessage());
             } catch (IOException ex) {
                 setErrorCode(-3);
                 setErrorMessage(ex);
@@ -256,12 +255,12 @@ public class JHttp {
         return errorMessage();
     }
 
-    public String errorMessage() {
-        return errorMessage;
-    }
-
     public int errorCode() {
         return errorCode;
+    }
+
+    public String errorMessage() {
+        return errorMessage;
     }
 
     @Override

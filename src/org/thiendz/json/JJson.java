@@ -3,6 +3,7 @@ package org.thiendz.json;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,53 +21,18 @@ public class JJson implements Comparable<JJson> {
 
     private Object obj;
 
-    /**
-     * parse chuỗi json cần đọc.
-     *
-     * @param json chuỗi json cần dc parse
-     *
-     * @return Trả về JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 1.6.0
-     */
     public static JJson parse(String json) {
         return new JJson(json);
     }
 
-    /**
-     * parse object json cần đọc.
-     *
-     * @param object object json cần dc parse lấy từ JSONValue.parse(String
-     * json): Object
-     *
-     * @return Trả về JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public static JJson parse(Object object) {
         return new JJson(object);
     }
 
-    /**
-     * khởi tạo 1 Json null sẵn sàng cho việc put array hoặc object.
-     *
-     * @param
-     *
-     * @return Trả về JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public static JJson cre() {
         return new JJson();
     }
 
-    //
     public JJson() {
     }
 
@@ -78,49 +44,16 @@ public class JJson implements Comparable<JJson> {
         obj = JSONValue.parse(json);
     }
 
-    /**
-     * truy cập đến đối tượng trong mảng.
-     *
-     * @param key chuỗi tên của đối tượng cần truy cập
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson k(String key) {
         JSONObject jsonObj = toJsonObject(this.obj);
         return new JJson(jsonObj != null ? jsonObj.get(key) : null);
     }
 
-    /**
-     * truy cập đến vị trí trong mảng.
-     *
-     * @param index int index cần lấy trong mảng cần truy cập
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson i(int index) {
         JSONArray jsonArray = toJsonArray(this.obj);
         return new JJson(jsonArray != null ? jsonArray.get(index) : null);
     }
 
-    /**
-     * truy cập đến object như javascript.
-     *
-     * @param query Chuỗi cần truy cập như object như javascript
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson q(String query) {
         Object objTmp = this.obj;
         //đầu vào hợp lệ
@@ -156,36 +89,13 @@ public class JJson implements Comparable<JJson> {
         return new JJson(objTmp);
     }
 
-    /**
-     * tạo mảng [] chứ value.
-     *
-     * @param objs mảng object chứa giá trị cần tạo mảng.
-     *
-     * @return Trả về đối tượng JSONArray
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
-    public JJson putArr(Object... objs) {
+    public JJson arr(Object... objs) {
         JSONArray ja = this.obj == null ? new JSONArray() : (JSONArray) this.obj;
         ja.addAll(Arrays.asList(objs));
         return new JJson(ja);
     }
 
-    /**
-     * tạo mảng {} chứa key: value. Lưu ý cần chú ý số lượng của phần tử mảng
-     * đầu vào phải chia hết cho 2 (đảm bảo đủ key và value)
-     *
-     * @param pair mảng object chứa giá trị cần tạo mảng.
-     *
-     * @return Trả về đối tượng JSONObject
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
-    public JJson putObj(Object... pair) {
+    public JJson obj(Object... pair) {
         if (pair.length % 2 == 0) {
             JSONObject jo = this.obj == null ? new JSONObject() : (JSONObject) this.obj;
             for (int i = 0; i < pair.length; i += 2) {
@@ -196,15 +106,28 @@ public class JJson implements Comparable<JJson> {
         return null;
     }
 
-    /**
-     * Lấy số nhỏ nhất trong mảng.
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
+    public JJson put(Map<Object, Object> map) {
+        if (map != null) {
+            JSONObject jo = this.obj == null ? new JSONObject() : (JSONObject) this.obj;
+            map.forEach((key, value) -> {
+                jo.put(key, value);
+            });
+            return new JJson(jo);
+        }
+        return null;
+    }
+
+    public JJson put(List<Object> list) {
+        if (list != null) {
+            JSONArray ja = this.obj == null ? new JSONArray() : (JSONArray) this.obj;
+            list.forEach((value) -> {
+                ja.add(value);
+            });
+            return new JJson(ja);
+        }
+        return null;
+    }
+
     public JJson min() {
         float[] fls = toFloats();
         if (fls == null) {
@@ -214,15 +137,6 @@ public class JJson implements Comparable<JJson> {
         return new JJson((Object) fls[0]);
     }
 
-    /**
-     * Lấy số lớn nhất trong mảng.
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson max() {
         float[] fls = toFloats();
         if (fls == null) {
@@ -232,15 +146,6 @@ public class JJson implements Comparable<JJson> {
         return new JJson((Object) fls[fls.length - 1]);
     }
 
-    /**
-     * Tính tổng trong mảng.
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson sum() {
         float[] fls = toFloats();
         if (fls == null) {
@@ -249,15 +154,6 @@ public class JJson implements Comparable<JJson> {
         return new JJson((Object) sumFloat(fls));
     }
 
-    /**
-     * Tính trung bình cộng của mảng.
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson avg() {
         float[] fls = toFloats();
         if (fls == null) {
@@ -266,15 +162,6 @@ public class JJson implements Comparable<JJson> {
         return new JJson((Object) (sumFloat(fls) / fls.length));
     }
 
-    /**
-     * Sắp xếp mảng tăng dần.
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson sort() {
         JJson[] json2Ts = toObjs();
         if (json2Ts == null) {
@@ -284,15 +171,6 @@ public class JJson implements Comparable<JJson> {
         return new JJson(JSONValue.parse(arraysToString(json2Ts)));
     }
 
-    /**
-     * Đảo ngược mảng.
-     *
-     * @return Trả về đối tượng JJson
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson reverse() {
         JJson[] json2Ts = toObjs();
         for (int i = 0; i < json2Ts.length / 2; i++) {
@@ -304,15 +182,6 @@ public class JJson implements Comparable<JJson> {
         return new JJson(JSONValue.parse(arraysToString(json2Ts)));
     }
 
-    /**
-     * Lấy mảng key và value của một node.
-     *
-     * @return Trả về mảng đối tượng JJson[][]
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson[][] toPairObjs() {
         JSONObject jsonObject = toJsonObject(this.obj);
         if (jsonObject == null) {
@@ -329,15 +198,6 @@ public class JJson implements Comparable<JJson> {
         return jsonSimpleses;
     }
 
-    /**
-     * Lấy mảng tên key trong một node có key và value.
-     *
-     * @return Trả về mảng key trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public String[] toKeys() {
         JJson[][] json2Tses = toPairObjs();
         if (json2Tses == null) {
@@ -351,15 +211,6 @@ public class JJson implements Comparable<JJson> {
         return keys;
     }
 
-    /**
-     * Lấy mảng giá trị trong một node có key và value.
-     *
-     * @return Trả về mảng giá trị JJson[] trong một node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson[] toValues() {
         JJson[][] json2Tses = toPairObjs();
         if (json2Tses == null) {
@@ -373,15 +224,6 @@ public class JJson implements Comparable<JJson> {
         return values;
     }
 
-    /**
-     * Lấy mảng giá trị trong một node.
-     *
-     * @return Trả về mảng giá trị JJson[] trong một node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public JJson[] toObjs() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -394,15 +236,6 @@ public class JJson implements Comparable<JJson> {
         return jsonSimples;
     }
 
-    /**
-     * Lấy mảng chuỗi trong một node.
-     *
-     * @return Trả về mảng chuỗi trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public String[] toStrs() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -415,15 +248,6 @@ public class JJson implements Comparable<JJson> {
         return strings;
     }
 
-    /**
-     * Lấy mảng kí tự trong một node.
-     *
-     * @return Trả về mảng kí tự trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public char[] toChars() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -441,15 +265,6 @@ public class JJson implements Comparable<JJson> {
         return chars;
     }
 
-    /**
-     * Lấy mảng số nguyên trong một node.
-     *
-     * @return Trả về mảng số thực trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public int[] toInts() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -467,15 +282,6 @@ public class JJson implements Comparable<JJson> {
         return ints;
     }
 
-    /**
-     * Lấy mảng số nguyên trong một node.
-     *
-     * @return Trả về mảng số thực trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public long[] toLongs() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -493,15 +299,6 @@ public class JJson implements Comparable<JJson> {
         return longs;
     }
 
-    /**
-     * Lấy mảng số thực trong một node.
-     *
-     * @return Trả về mảng số thực trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public double[] toDoubles() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -519,15 +316,6 @@ public class JJson implements Comparable<JJson> {
         return doubles;
     }
 
-    /**
-     * Lấy mảng số thực trong một node.
-     *
-     * @return Trả về mảng số thực trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public float[] toFloats() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -545,15 +333,6 @@ public class JJson implements Comparable<JJson> {
         return floats;
     }
 
-    /**
-     * Lấy mảng boolean trong một node.
-     *
-     * @return Trả về mảng boolean trong node
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public boolean[] toBooleans() {
         JSONArray jsonArray = toJsonArray(this.obj);
         if (jsonArray == null) {
@@ -571,55 +350,19 @@ public class JJson implements Comparable<JJson> {
         return booleans;
     }
 
-    /**
-     * Lấy đối tượng
-     *
-     * @return Trả về object
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public Object toObj() {
         return this.obj;
     }
 
-    /**
-     * Lấy chuỗi
-     *
-     * @return Trả về chuỗi
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public String toStr() {
         return this.obj == null ? null : this.obj.toString();
     }
 
-    /**
-     * Lấy chuỗi
-     *
-     * @return Trả về chuỗi
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     @Override
     public String toString() {
         return toStr();
     }
 
-    /**
-     * Lấy kí tự
-     *
-     * @return Trả về kí tự
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public char toChar() {
         try {
             return this.obj.toString().toCharArray()[0];
@@ -628,15 +371,6 @@ public class JJson implements Comparable<JJson> {
         }
     }
 
-    /**
-     * Lấy số nguyên
-     *
-     * @return Trả về số nguyên
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public int toInt() {
         try {
             return Integer.parseInt(strToInt(this.obj.toString()));
@@ -645,15 +379,6 @@ public class JJson implements Comparable<JJson> {
         }
     }
 
-    /**
-     * Lấy số nguyên
-     *
-     * @return Trả về số nguyên
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public long toLong() {
         try {
             return Long.parseLong(strToInt(this.obj.toString()));
@@ -662,15 +387,6 @@ public class JJson implements Comparable<JJson> {
         }
     }
 
-    /**
-     * Lấy số thực
-     *
-     * @return Trả về số thực
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public double toDouble() {
         try {
             return Double.parseDouble(this.obj.toString());
@@ -679,15 +395,6 @@ public class JJson implements Comparable<JJson> {
         }
     }
 
-    /**
-     * Lấy số thực
-     *
-     * @return Trả về số thực
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
     public float toFloat() {
         try {
             return Float.parseFloat(this.obj.toString());
@@ -695,15 +402,7 @@ public class JJson implements Comparable<JJson> {
             return 0;
         }
     }
-    /**
-     * Lấy boolean
-     *
-     * @return Trả về kiểu boolean
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
+
     public boolean toBoolean() {
         try {
             return Boolean.parseBoolean(this.obj.toString());
@@ -712,16 +411,6 @@ public class JJson implements Comparable<JJson> {
         }
     }
 
-    /**
-     * Lấy dộ dài của mảng
-     *
-     * @return Trả về độ dài của mảng
-     *
-     * @see org.thiendz.json.JJson
-     *
-     * @since 2.0.0.0
-     */
-    //
     public int length() {
         int lengthObject = isInstanceOfJsonObject(this.obj) ? toJsonObject(this.obj).size() : -1;
         int lengthArray = isInstanceOfJsonArray(this.obj) ? toJsonArray(this.obj).size() : -1;

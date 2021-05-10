@@ -4,9 +4,9 @@ Tham khảo [`HttpRequest-kevinsawicki`](https://github.com/kevinsawicki/http-re
 `JHttp` sẽ giải quyết những gì mà [`HttpRequest-kevinsawicki`](https://github.com/kevinsawicki/http-request) còn thiếu sót.  
 
 ## Cách cài đặt
-- truy cập `releases`, tìm và tải phiên bản mới nhất.
-- Giải nén file zip để lấy thư viện (`.jar`).
-- Trong IDE của bạn thêm thư viện vào Jar Library.
+- truy cập [`releases`](https://github.com/PhamHuyThien/JHttp/releases), tìm và tải phiên bản mới nhất.
+- Giải nén file zip để lấy các thư viện (`.jar`).
+- Trong IDE của bạn thêm thư viện vào `Jar Library`.
 
 ## Ví dụ
 ### Thực hiện việc get request và lấy code status trả về
@@ -70,79 +70,69 @@ int errorCode = rq.errorCode();
 int msg = rq.errorMessage();
 System.out.println("errorCode: "+errorCode+", errorMessage: "+errorMessage);
 ```
-với errorCode = 0, request chưa được thực hiện.  
-với errorCode < 0, đã sảy ra exception (chi tiết xem errorMessage).  
-với errorCode > 0, request thành công và trả về mã.  
+|ErrorCode|Debug|
+|-----|------|
+|`>0`|Request success, return code.|
+|`=0`|Request not execute()|
+|`-1`|Constructor `JHttp()` return exception|
+|`-2`|`send(...):JHttp` return exception|
+|`-3`|`execute():JHttp` return exception|
+|`-4`|`header(String key):String` return exception|
+|`-5`|`headers():Map<String, String>` return exception|
+|`-6`|`json():JJson` or `body():String` return exception|
 
 ## Cấu trúc
-
-### callback
-- `get(String url): JHttp` thực hiện tạo JHttp có method là get
-- `get(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là get, có param là pairs(key, value) encode sẽ mã hóa đầu vào
-- `post(String url): JHttp` thực hiện tạo JHttp có method là post
-- `post(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
-- `put(String url): JHttp` thực hiện tạo JHttp có method là post
-- `put(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
-- `delete(String url): JHttp` thực hiện tạo JHttp có method là post
-- `delete(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
-- `connect(String url): JHttp` thực hiện tạo JHttp có method là post
-- `connect(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
-- `options(String url): JHttp` thực hiện tạo JHttp có method là post
-- `options(String url, boolean encode, Object... pairs): JHttp` thực hiện tạo JHttp có method là post, có param là pairs(key, value) encode sẽ mã hóa đầu vào
-- `method(String method): JHttp` set method cho request (mặc định `JHttp.METHOD_GET`)
-- `header(String key, String value): JHttp` set header cho request
-- `headers(Map<String, String> headers): JHttp` set header cho request
-- `headers(String headers): JHttp` set list string header cho request (key:value\nkey1:value1\n...)
-- `cookie(String cookie): JHttp` set cookie cho request
-- `userAgent(): JHttp` set user-agent mặc định cho request (mặc định `JHttp.USERAGENT_DEFAULT`)
-- `userAgent(String userAgent): JHttp` set user agent cho request
-- `proxy(String host, int port): JHttp` set Proxy cho request
-- `auth(String user, String pass): JHttp` set auth proxy cho request
-- `timeout(int milis): JHttp` set timeout cho request
-- `send(Object... pairs): JHttp` gửi dữ liệu đi (định dạng `(key, value, key1, value1, ...)`) (mặc định không encode).
-- `send(boolean encode, Object... pairs): JHttp` gửi dữ liệu đi (định dạng `(key, value, key1, value1, ...)`).
-- `send(String param): JHttp` gửi dữ liệu đi (định dạng `key=value&key1=value1&...`) (mặc định `JHttp.CHARSET_UTF8`)
-- `send(JJson json): JHttp` gửi dữ liệu đi (định dạng json) (mặc định `content-type: application/json`)
-- `send(String param, String charset): JHttp` gửi dữ liệu đi (định dạng `key=value&key1=value1&...`)
-- `execute(): JHttp` chạy request (không cần sử dụng cũng được).
-### get
-- `header(String key): String` get header có name là String key
-- `headers(): Map<String, String>` get all header có trong request
-- `body(): String` lấy raw html (mặc định `JHttp.CHARSET_UTF8`)
-- `json(): JJson` chuyển body sang json
-- `code(): int` mã code response
-- `message(): String` string code response
-- `errorCode(): int` lấy mã lỗi để debug
-- `errorMessage(): String` lý do gây ra lỗi để debug
+|Type|Function|
+|-----|------|
+|`static`|`get(String url): JHttp`|
+|`static`|`get(String url, boolean encode, Object... args):JHttp`|
+|`static`|`[post, put, delete, connect, option...](...):JHttp`|
+|`constructor`|`JHttp(String url):JHttp`|
+||`method(String method):JHttp`|
+||`headers(String headers):JHttp`|
+||`headers(Map<String, String> map):JHttp`|
+||`header(Object key, Object value):JHttp`|
+||`cookie(String cookie):JHttp`|
+||`userAgent():JHttp`|
+||`userAgent(String userAgent):JHttp`|
+||`proxy(String host, int port):JHttp`|
+||`auth(String user, String pass):JHttp`|
+||`timeout(int milis):JHttp`|
+||`send(boolean encode, Object... params):JHttp`|
+||`send(JJson json):JHttp`|
+||`send(String data):JHttp`|
+||`send(String data, String charset):JHttp`|
+||`execute():JHttp`|
+||`header(String key):String`|
+||`headers():Map<String, String>`
+||`json():JJson`|
+||`body():String`|
+||`code():int`|
+||`message():String`|
+||`errorCode():int`|
+||`errorMessage():String`|
 
 ## Lịch sử cập nhật
-
-#### v1.0.4
-- thay HttpURLConnection sang HttpSocketConnection (lib riêng)
-- bỏ `body(String charset): String`, mặc định `JHttp.CHARSET_UTF8`
-- thêm các option function static các method cho tiện
-- thêm `proxy(String host, int port): JHttp` và `auth(String user, String pass): JHttp`
-- thêm `timeout(int milis): JHttp`
-- thêm `json(): JJson` chuyển body sang json
-- thêm `send(JJson json): JHttp` gửi dữ liệu đi (định dạng json)
-
-#### v1.0.3
-- Cập nhật lại toàn bộ source cho mượn mà hơn
-- Update lại hàm `send(boolean encode, Object... pairs): JHttp` và các hàm tương tự.
-
-#### v1.0.2
-- sử dụng `HttpsURLConnection` cho những request có protocol https
-- Đổi `getErrorCode(): int` thành `errorCode(): int`
-- Đổi `getErrorMessage(): String` thành `errorMessage(): String`
-
-#### v1.0.1 
-- trả về String exept thay vì tự đặt như trước
-- return String nếu lỗi sẽ trả về errorMessage
-- return int nếu lỗi sẽ trả về errorCode
-- còn lại sẽ trả về null
-
-#### v1.0.0
-- Ra mắt phiên bản đầu tiên
+|Version|Changed|
+|-----|------|
+|**v1.0.5**|update JJson lên phiên bản 2.0.1
+|**v1.0.4**|thay HttpURLConnection sang HttpSocketConnection (lib riêng)|
+||bỏ `body(String charset): String`, mặc định `JHttp.CHARSET_UTF8`|
+||thêm các option function static các method cho tiện|
+||thêm `proxy(String host, int port): JHttp` và `auth(String user, String pass): JHttp`|
+||thêm `timeout(int milis): JHttp`|
+||thêm `json(): JJson` chuyển body sang json|
+||thêm `send(JJson json): JHttp` gửi dữ liệu đi (định dạng json)|
+|**v1.0.3**|Cập nhật lại toàn bộ source cho mượn mà hơn|
+||Update lại hàm `send(boolean encode, Object... pairs): JHttp` và các hàm tương tự.|
+|**v1.0.2**|sử dụng `HttpsURLConnection` cho những request có protocol https|
+||Đổi `getErrorCode(): int` thành `errorCode(): int`|
+||Đổi `getErrorMessage(): String` thành `errorMessage(): String`|
+|**v1.0.1**|trả về String except thay vì tự đặt như trước
+||return String nếu lỗi sẽ trả về errorMessage|
+||return int nếu lỗi sẽ trả về errorCode|
+||còn lại sẽ trả về null|
+|**v1.0.0**|Ra mắt phiên bản đầu tiên|
 
 ## Về tác giả
 - Tên: Phạm Huy Thiên (SystemError)
